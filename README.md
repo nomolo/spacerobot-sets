@@ -47,11 +47,20 @@ An up to date version of the code can be cloned from [https://github.com/aerorob
 Install a C++17 compiler, CMake 3.18 or newer, and Python 3.8 or newer
 with development headers. On Ubuntu/Debian:
 ```bash
-sudo apt install build-essential cmake python3-dev python3-venv
+sudo apt install build-essential cmake python3-dev python3-venv curl
 ```
 
-Place the dependency source distributions in the following directories at the
-project root before building:
+Download and extract the C++ dependencies from the project root before building
+(requires Bash, curl, and tar):
+
+```bash
+bash download_dependencies.sh
+```
+
+The script places archives in `3rdparty/`, deletes each archive after successful
+extraction, and skips dependency directories that already contain a
+`CMakeLists.txt`. It can be run from any working directory and creates the
+following layout:
 
 ```text
 3rdparty/
@@ -62,8 +71,8 @@ project root before building:
 
 Each dependency directory must contain its top-level `CMakeLists.txt`. CMake
 builds these sources directly; no Git submodule initialization is required.
-The `3rdparty/` directory is ignored by Git, so dependencies must be provided
-locally after cloning the repository.
+The `3rdparty/` directory is ignored by Git, so run the download script after
+cloning the repository.
 
 Create a Python virtual environment and install the Python dependencies from
 the project root:
