@@ -10,7 +10,15 @@ import itertools as it
 import os 
 import matplotlib.cm as cm
 
-import sys 
+import sys
+from pathlib import Path
+
+# Resolve imports and outputs independently of the current working directory.
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+DATA_DIR = PROJECT_ROOT / "data"
+DATA_DIR.mkdir(parents=True, exist_ok=True)
+sys.path.insert(0, str(PROJECT_ROOT))
+sys.path.insert(0, str(PROJECT_ROOT / "src"))
 import plotter 
 from util import util 
 from build.bindings import \
@@ -356,7 +364,7 @@ def run_sim(process_count, initial_state, config_dict, solver_param, seed, paral
                         if xs.shape[0] != 0:
                             trajs_np[jj,0:xs.shape[0],:] = xs
                     trajs_np = sparsify_trajs(trajs_np, 1000)
-                    fn = "../data/{}_trajs_pc{}_ii{}".format(result["config_name"], result["process_count"], ii_trajs)
+                    fn = str(DATA_DIR / "{}_trajs_pc{}_ii{}".format(result["config_name"], result["process_count"], ii_trajs))
                     util.save_npy(trajs_np, fn)
                     ii_trajs += 1
 
@@ -378,14 +386,14 @@ def run_sim(process_count, initial_state, config_dict, solver_param, seed, paral
     # print("result",result)
 
     result["success"] = True
-    util.save_pickle(result, "../data/{}_{}.pkl".format(config_name, process_count))
+    util.save_pickle(result, str(DATA_DIR / "{}_{}.pkl".format(config_name, process_count)))
 
     # print("process count: {} complete!".format(process_count))
     return None
 
 
 def load_trajss(result):
-    fns = glob.glob("../data/test_{}_trajs_pc{}_ii{}".format(result["config_name"], result["process_count"], "*"))
+    fns = glob.glob(str(DATA_DIR / "test_{}_trajs_pc{}_ii{}".format(result["config_name"], result["process_count"], "*")))
     iis = [int(find_between(fn, "ii", ".npy")) for fn in fns]
     # print(iis)
     fns = [fn for _,fn in sorted(zip(iis,fns))]
@@ -462,7 +470,7 @@ def plot_results(results):
     # print("data_summary",data_summary)
     for key, value in data_summary.items():
         print("{}: {}".format(key, value))
-    util.save_pickle(data_summary, "../data/data_summary_{}.pkl".format(results[0]["config_name"]))
+    util.save_pickle(data_summary, str(DATA_DIR / "data_summary_{}.pkl".format(results[0]["config_name"])))
 
 
 
@@ -487,6 +495,7 @@ def main():
     config_name = "value_convergence"
     config_path = util.get_config_path(config_name)
     config_dict = util.load_yaml(config_path)
+    config_dict["config_path"] = config_path
 
     mdp = get_mdp("GameSixDOFAircraft", config_path)
     initial_state = mdp.initial_state()
@@ -531,13 +540,13 @@ def main():
 
         # remove old files
         print("removing old files...")
-        for fn in glob.glob("../data/{}_{}.pkl".format(config_dict["config_name"], "*")):
+        for fn in glob.glob(str(DATA_DIR / "{}_{}.pkl".format(config_dict["config_name"], "*"))):
             os.remove(fn)
-        for fn in glob.glob("../data/{}_trajs_pc{}_ii{}".format(config_dict["config_name"], "*", "*")):
+        for fn in glob.glob(str(DATA_DIR / "{}_trajs_pc{}_ii{}".format(config_dict["config_name"], "*", "*"))):
             os.remove(fn)
 
         start_time = timer.time()
-        args = list(it.product([initial_state], [util.load_yaml(config_path)], solver_params, range(num_seeds)))
+        args = list(it.product([initial_state], [config_dict], solver_params, range(num_seeds)))
         args = [[ii, *arg, parallel_on] for ii, arg in enumerate(args)] 
         if parallel_on:
             pool = mp.Pool(max_num_workers)
@@ -552,14 +561,14 @@ def main():
         print("total time: {}s".format(timer.time() - start_time))
 
     results = []
-    for fn in glob.glob("../data/{}_{}.pkl".format(config_dict["config_name"], "*")):
+    for fn in glob.glob(str(DATA_DIR / "{}_{}.pkl".format(config_dict["config_name"], "*"))):
         results.append(util.load_pickle(fn))
     results = [result for result in results if result is not None]   
 
     plot_results(results)
 
-    plotter.save_figs("../plots/value_convergence.pdf")
-    plotter.open_figs("../plots/value_convergence.pdf")
+    plotter.save_figs(str(DATA_DIR / "value_convergence.pdf"))
+    plotter.open_figs(str(DATA_DIR / "value_convergence.pdf"))
     # plotter.show_figs()
     plotter.close_figs()
 

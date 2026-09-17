@@ -11,8 +11,15 @@ import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
 
 # custom
-import sys 
-sys.path.append("../src")
+import sys
+from pathlib import Path
+
+# Resolve imports and outputs independently of the current working directory.
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+DATA_DIR = PROJECT_ROOT / "data"
+DATA_DIR.mkdir(parents=True, exist_ok=True)
+sys.path.insert(0, str(PROJECT_ROOT))
+sys.path.insert(0, str(PROJECT_ROOT / "src"))
 import plotter 
 from util import util 
 from build.bindings import get_mdp, get_dots_mdp, get_uct, get_uct2, RNG, UCT, MDP, \
@@ -144,7 +151,7 @@ def rollout(process_count, config_dict, seed, parallel_on, initial_state=None):
         "success" : False
     }
 
-    for trajs_fn in glob.glob(f"../data/test_{result['config_name']}_trajs_pc{process_count}_ii*"):
+    for trajs_fn in glob.glob(str(DATA_DIR / f"test_{result['config_name']}_trajs_pc{process_count}_ii*")):
         if os.path.exists(trajs_fn):
             os.remove(trajs_fn)
 
@@ -252,7 +259,7 @@ def rollout(process_count, config_dict, seed, parallel_on, initial_state=None):
                         if xs.shape[0] != 0:
                             trajs_np[jj,0:xs.shape[0],:] = xs
                     trajs_np = sparsify_trajs(trajs_np, 1000)
-                    fn = "../data/test_{}_trajs_pc{}_ii{}".format(result["config_name"], result["process_count"], ii_trajs)
+                    fn = str(DATA_DIR / "test_{}_trajs_pc{}_ii{}".format(result["config_name"], result["process_count"], ii_trajs))
                     util.save_npy(trajs_np, fn)
                     ii_trajs += 1
 
@@ -266,11 +273,11 @@ def rollout(process_count, config_dict, seed, parallel_on, initial_state=None):
     if len(result["uct_trees"]) > 0:
         result_no_trees = result.copy()
         result_no_trees.pop("uct_trees")
-        util.save_pickle(result_no_trees, "../data/rollout_result_{}_{}.pkl".format(config_name, process_count))
+        util.save_pickle(result_no_trees, str(DATA_DIR / "rollout_result_{}_{}.pkl".format(config_name, process_count)))
         if parallel_on: 
             return result_no_trees
     else:
-        util.save_pickle(result, "../data/rollout_result_{}_{}.pkl".format(config_name, process_count))
+        util.save_pickle(result, str(DATA_DIR / "rollout_result_{}_{}.pkl".format(config_name, process_count)))
 
     result["success"] = True
     # print_result(result)
@@ -345,7 +352,7 @@ def plot_result(result):
         render_movie(result)
 
     if plot_tree_trajs_on:
-        for trajs_fn in glob.glob(f"../data/test_{result['config_name']}_trajs_pc*_ii*"):
+        for trajs_fn in glob.glob(str(DATA_DIR / f"test_{result['config_name']}_trajs_pc*_ii*")):
             trajs = util.load_npy(trajs_fn)
             from value_convergence import render_tree_glider
             ground_mdp = get_mdp(result["config_dict"]["ground_mdp_name"], result["config_path"])
@@ -889,13 +896,15 @@ def main():
 
     # config_path = util.get_config_path("fixed_wing")
     config_path = util.get_config_path("rollout")
+    config_dict = util.load_yaml(config_path)
+    config_dict["config_path"] = config_path
 
     if only_plot:
-        fns = glob.glob("../data/rollout_result_rollout_*.pkl")
+        fns = glob.glob(str(DATA_DIR / "rollout_result_rollout_*.pkl"))
         results = [util.load_pickle(fn) for fn in fns]
     else:
         start_time = timer.time()
-        args = list(it.product([util.load_yaml(config_path)], range(num_seeds)))
+        args = list(it.product([config_dict], range(num_seeds)))
         args = [[ii, *arg, parallel_on] for ii, arg in enumerate(args)] 
         if parallel_on:
             num_workers = mp.cpu_count() - 1
@@ -909,8 +918,8 @@ def main():
     for result in results:
         if result is not None:
             plot_result(result)
-    plotter.save_figs("../plots/rollout.pdf")
-    plotter.open_figs("../plots/rollout.pdf")
+    plotter.save_figs(str(DATA_DIR / "rollout.pdf"))
+    plotter.open_figs(str(DATA_DIR / "rollout.pdf"))
     # plotter.show_figs()
 
     print("done!")

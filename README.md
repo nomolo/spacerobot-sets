@@ -33,7 +33,7 @@ The data and code here are for personal and educational use only and provided wi
 
 The primary data and code is stored in the `sets.tar.gz` tarball and can be extracted by `tar -zxvf sets.tar.gz` on linux systems. 
 
-The directory contains the following subdirectories: `src` contains the solver and problem models in cpp and python bindings, `data` and `plots` stores the output of python scripts found in `scripts` with parameters specified in `configs`. We include two scripts: `value_convergence.py`, and `policy_convergence.py`, that should produce the plots in Figure 5 in the paper. There may be some small discreptancy in results because the solutions are anytime and therefore depend on machine-specific processor power. 
+The directory contains the following subdirectories: `src` contains the solver and problem models in cpp and python bindings, `data` stores the data and PDF output of python scripts found in `scripts` with parameters specified in `configs`. We include two scripts: `value_convergence.py`, and `policy_convergence.py`, that should produce the plots in Figure 5 in the paper. There may be some small discreptancy in results because the solutions are anytime and therefore depend on machine-specific processor power.
 
 [https://doi.org/10.5061/dryad.s7h44j1h5](https://doi.org/10.5061/dryad.s7h44j1h5)
 
@@ -71,6 +71,8 @@ make
 ```
 
 ## Scripts
+
+All scripts save their data and PDF plots in the project’s `data/` directory, which is created automatically if needed. Output paths are independent of the working directory: run `python scripts/rollout.py` from the project root or `python rollout.py` from `scripts/` (likewise for the convergence scripts).
 
 <!-- To make the rollout plot (fig 5a/b)
 ```

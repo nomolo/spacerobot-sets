@@ -11,6 +11,15 @@ import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
 
 # custom
+import sys
+from pathlib import Path
+
+# Resolve imports and outputs independently of the current working directory.
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+DATA_DIR = PROJECT_ROOT / "data"
+DATA_DIR.mkdir(parents=True, exist_ok=True)
+sys.path.insert(0, str(PROJECT_ROOT))
+sys.path.insert(0, str(PROJECT_ROOT / "src"))
 import plotter 
 from util import util 
 from build.bindings import get_mdp, get_dots_mdp, get_uct, RNG, UCT, MDP, \
@@ -48,7 +57,7 @@ def policy_convergence(process_count, config_dict, seed, N, parallel_on, initial
         "max_frac_visit_counts_per_depth" : max_frac_visit_counts_per_depth
     }
     # todo: save data
-    util.save_pickle(policy_convergence_result, "../data/policy_convergence_result_cast_game2_{}.pkl".format(process_count))
+    util.save_pickle(policy_convergence_result, str(DATA_DIR / "policy_convergence_result_cast_game2_{}.pkl".format(process_count)))
     return policy_convergence_result
 
 
@@ -146,6 +155,8 @@ def main():
     # config_path = util.get_config_path("fixed_wing")
     # config_path = util.get_config_path("value_convergence")
     config_path = util.get_config_path("policy_convergence")
+    config_dict = util.load_yaml(config_path)
+    config_dict["config_path"] = config_path
 
     # Ns = [100, 1000, 10000]
     # Ns = [50, 100, 500, 1000, 5000, 10000, 50000, 100000, 500000, 1000000, 5000000, 10000000] # this is as far as I got on 64
@@ -156,12 +167,12 @@ def main():
     # Ns = [50, 100, 500]
 
     if only_plot:
-        fns = glob.glob("../data/policy_convergence_*.pkl")
+        fns = glob.glob(str(DATA_DIR / "policy_convergence_*.pkl"))
         print("fns",fns)
         results = [util.load_pickle(fn) for fn in fns]
     else:
         start_time = timer.time()
-        args = list(it.product([util.load_yaml(config_path)], range(num_seeds), Ns))
+        args = list(it.product([config_dict], range(num_seeds), Ns))
         args = [[ii, *arg, parallel_on] for ii, arg in enumerate(args)] 
         if parallel_on:
             num_workers = mp.cpu_count() - 1
@@ -174,8 +185,8 @@ def main():
 
     plot_policy_convergence_results(results)
 
-    plotter.save_figs("../plots/policy_convergence.pdf")
-    plotter.open_figs("../plots/policy_convergence.pdf")
+    plotter.save_figs(str(DATA_DIR / "policy_convergence.pdf"))
+    plotter.open_figs(str(DATA_DIR / "policy_convergence.pdf"))
 
     print("done!")
 

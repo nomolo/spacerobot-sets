@@ -1,66 +1,41 @@
-# CMakeLists.txt
-
-cmake_minimum_required(VERSION 2.8.12)
-project(bindings)
+cmake_minimum_required(VERSION 3.18)
+project(bindings LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-set(CMAKE_CXX_FLAGS "-O2")
+# Use modern Python discovery, while accepting the README's legacy option.
+if(DEFINED PYTHON_EXECUTABLE AND NOT DEFINED Python_EXECUTABLE)
+    set(Python_EXECUTABLE "${PYTHON_EXECUTABLE}")
+endif()
+find_package(Python REQUIRED COMPONENTS Interpreter Development.Module)
+set(PYBIND11_FINDPYTHON ON)
 
-# if(EXISTS "/Users/jlathrop")    # John's laptop
-# set(MOSEK_HOME_DIR "/Users/jlathrop/mosek/10.0/tools/platform/osxaarch64")
-# elseif(EXISTS "/home/ben")      # Ben's laptop
-# set(MOSEK_HOME_DIR "/home/ben/mosek/mosek/9.3/tools/platform/linux64x86")
-# # set(MOSEK_HOME_DIR "/home/ben/mosek/10.1/tools/platform/linux64x86")
-# elseif(EXISTS "/home/arcl")
-# set(MOSEK_HOME_DIR "/home/arcl/mosek/10.0/tools/platform/linux64x86")
-# elseif(EXISTS "/home/pl")      # lambda
-# set(MOSEK_HOME_DIR "/home/pl/mosek/mosek/9.3/tools/platform/linux64x86")
-# else()
-# message("Unknown PC. Unable to locate mosek folder.")
-# # /home/ben/anaconda3/envs/dots_env/lib/python3.7/site-packages/mosek
-# endif()
+set(THIRDPARTY_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../3rdparty")
 
-# set(MOSEK_SOURCE_DIR ${MOSEK_HOME_DIR}/bin)
-# set(MOSEK_INCLUDE_DIR ${MOSEK_HOME_DIR}/h)
-# set(ENV_DIR "~/anaconda3/envs/dots_env")
-set(ENV_DIR "~/anaconda3/envs/sets")
+# Only build the dependencies needed by the Python module.
+set(EIGEN_BUILD_TESTING OFF)
+set(EIGEN_BUILD_DOC OFF)
+set(EIGEN_BUILD_BLAS OFF)
+set(EIGEN_BUILD_LAPACK OFF)
+set(EIGEN_BUILD_DEMOS OFF)
+add_subdirectory("${THIRDPARTY_DIR}/eigen-3.4.1"
+                 "${CMAKE_CURRENT_BINARY_DIR}/3rdparty/eigen" EXCLUDE_FROM_ALL)
 
-# add_subdirectory(pybind11)
-find_package(pybind11 REQUIRED)
-find_package(Eigen3 REQUIRED)
-find_package(yaml-cpp REQUIRED)
+set(YAML_CPP_BUILD_TESTS OFF)
+set(YAML_CPP_BUILD_TOOLS OFF)
+set(YAML_CPP_INSTALL OFF)
+set(YAML_BUILD_SHARED_LIBS OFF)
+# Static yaml-cpp must be position-independent to link into a Python module.
+set(YAML_ENABLE_PIC ON)
+add_subdirectory("${THIRDPARTY_DIR}/yaml-cpp-yaml-cpp-0.9.0"
+                 "${CMAKE_CURRENT_BINARY_DIR}/3rdparty/yaml-cpp" EXCLUDE_FROM_ALL)
 
-# find_package(spdlog REQUIRED)
-# find_package(fmt REQUIRED)
-
-include_directories( ${EIGEN3_INCLUDE_DIRS} )
-# include_directories( ${MOSEK_INCLUDE_DIR} )
-include_directories( ${YAML_CPP_INCLUDE_DIRS})
-include_directories( "${ENV_DIR}/include")
-include_directories( "${ENV_DIR}/include/yaml-cpp" )
-
-# include_directories( ${SPDLOG_INCLUDE_DIRS})
-# include_directories( ${FMT_INCLUDE_DIRS})
-
-# find_library(moseklib
-#     NAMES "mosek64"
-#     HINTS "${MOSEK_SOURCE_DIR}"
-#     REQUIRED)
-# find_library(fusionlib
-#     NAMES "fusion64"
-#     HINTS "${MOSEK_SOURCE_DIR}"
-#     REQUIRED)
-find_library(yaml-cpp
-    NAMES "yaml-cpp"
-    HINTS "${ENV_DIR}/lib"
-    REQUIRED)
-
-# list( APPEND CMAKE_BUILD_RPATH ${MOSEK_SOURCE_DIR} )
+set(PYBIND11_TEST OFF)
+set(PYBIND11_INSTALL OFF)
+add_subdirectory("${THIRDPARTY_DIR}/pybind11-3.1.0"
+                 "${CMAKE_CURRENT_BINARY_DIR}/3rdparty/pybind11" EXCLUDE_FROM_ALL)
 
 pybind11_add_module(bindings bindings.cpp)
-set_target_properties(${target} PROPERTIES CXX_VISIBILITY_PRESET "default")
-target_link_libraries(bindings PRIVATE ${YAML_CPP_LIBRARIES})
-
+target_link_libraries(bindings PRIVATE Eigen3::Eigen yaml-cpp::yaml-cpp)
