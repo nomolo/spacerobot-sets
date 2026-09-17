@@ -57,6 +57,9 @@ Download and extract the C++ dependencies from the project root before building
 bash download_dependencies.sh
 ```
 
+Run the script with `bash` or `./download_dependencies.sh`; do not use `source`
+or `.`, which execute scripts in your current shell.
+
 The script places archives in `3rdparty/`, deletes each archive after successful
 extraction, and skips dependency directories that already contain a
 `CMakeLists.txt`. It can be run from any working directory and creates the

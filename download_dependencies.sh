@@ -1,4 +1,12 @@
 #!/usr/bin/env bash
+
+# Sourcing would apply set -e and the exit traps to the caller's SSH shell.
+if [[ "${BASH_SOURCE[0]}" != "$0" ]]; then
+    printf 'Run this script with bash, not source: bash "%s"\n' "${BASH_SOURCE[0]}" >&2
+    # Return success so even callers using set -e keep their current session.
+    return 0
+fi
+
 set -euo pipefail
 
 PROJECT_ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
@@ -39,8 +47,14 @@ download_dependency() {
     fi
 
     printf 'Downloading %s...\n' "$directory"
-    curl --fail --location --show-error --retry 3 --connect-timeout 30 \
-        --output "$archive" "$url"
+    if curl --fail --location --show-error --retry 3 --connect-timeout 30 \
+        --output "$archive" "$url"; then
+        :
+    else
+        local status=$?
+        printf 'Error: download failed for %s (curl exit code %s). Run this script again to retry.\n' "$directory" "$status" >&2
+        return "$status"
+    fi
 
     # Extract into a temporary directory so failed extraction cannot leave a
     # partially installed dependency. Each upstream archive has one root folder.
@@ -64,6 +78,6 @@ download_dependency "pybind11-3.1.0" \
 download_dependency "eigen-3.4.1" \
     "https://gitlab.com/libeigen/eigen/-/archive/3.4.1/eigen-3.4.1.tar.gz"
 download_dependency "yaml-cpp-yaml-cpp-0.9.0" \
-    "https://github.com/jbeder/yaml-cpp/releases/download/yaml-cpp-0.9.0/yaml-cpp-yaml-cpp-0.9.0.tar.gz"
+    "https://github.com/jbeder/yaml-cpp/archive/refs/tags/yaml-cpp-0.9.0.tar.gz"
 
 printf 'All C++ dependencies are ready.\n'
