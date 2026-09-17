@@ -44,30 +44,40 @@ An up to date version of the code can be cloned from [https://github.com/aerorob
 
 ## Installation
 
-Basic dependencies 
+Install a C++17 compiler, CMake 3.18 or newer, and Python 3.8 or newer
+with development headers. On Ubuntu/Debian:
 ```bash
-sudo apt install build-essential
-sudo apt install libeigen3-dev
-sudo apt install libyaml-dev
+sudo apt install build-essential cmake python3-dev python3-venv
 ```
 
-Use conda for most dependencies. 
-```bash
-conda env create --file environment.yml
+Place the dependency source distributions in the following directories at the
+project root before building:
+
+```text
+3rdparty/
+├── eigen-3.4.1/
+├── pybind11-3.1.0/
+└── yaml-cpp-yaml-cpp-0.9.0/
 ```
 
-Add src to path:
-```
-conda develop ~/src/
+Each dependency directory must contain its top-level `CMakeLists.txt`. CMake
+builds these sources directly; no Git submodule initialization is required.
+The `3rdparty/` directory is ignored by Git, so dependencies must be provided
+locally after cloning the repository.
+
+Create a Python virtual environment and install the Python dependencies from
+the project root:
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install -r requirements.txt
 ```
 
 ## Build
-from `~/src/`, and with conda activated
+From the project root, with the virtual environment activated:
 ```bash
-mkdir build
-cd build 
-cmake -DPYTHON_EXECUTABLE=$(which python) -DCMAKE_BUILD_TYPE=Release ..
-make 
+cmake -S src -B src/build -DPython_EXECUTABLE="$(command -v python)" -DCMAKE_BUILD_TYPE=Release
+cmake --build src/build --parallel
 ```
 
 ## Scripts
